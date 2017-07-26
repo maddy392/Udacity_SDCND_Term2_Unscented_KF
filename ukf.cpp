@@ -22,12 +22,23 @@ UKF::UKF() {
 
   // initial covariance matrix
   P_ = MatrixXd(5, 5);
+  P_.fill (0.0);
+  for (int i = 0; i < P_.col().size(); i++)
+  {
+    P_(i,i) = 0;
+  }
+
+  /***************************************/
+    /* Need to tune later */ 
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 30; 
 
   // Process noise standard deviation yaw acceleration in rad/s^2
   std_yawdd_ = 30;
+
+   /* Need to tune later */ 
+  /***************************************/
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -48,9 +59,34 @@ UKF::UKF() {
   TODO:
 
   Complete the initialization. See ukf.h for other member properties.
-
   Hint: one or more values initialized above might be wildly off...
   */
+
+  is_initialized_ = false;
+  use_radar_ = true;
+  use_laser_ = true;
+
+  ///* predicted sigma points matrix
+  //MatrixXd Xsig_pred_;
+
+  ///* time when the state is true, in us
+  //long long time_us_;
+
+  ///* Weights of sigma points
+  //VectorXd weights_;
+
+  ///* State dimension
+  n_x_ = x_.size();
+
+  ///* Augmented state dimension
+  n_aug_ = 7;
+
+  ///* Sigma point spreading parameter
+  double lambda_ = 3 - n_aug_;
+
+
+
+
 }
 
 UKF::~UKF() {}
@@ -66,6 +102,41 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+
+  /***************************************************/
+  /***************************************************/
+  // Initialization
+  if (!is_initialized_)
+  {
+    x_ << 1,1,1,1,0.5; 
+    time_us_ = meas_package.timestamp_;
+    is_initialized_ = true;
+
+    if(meas_package.sensor_type_ == MeasurementPackage::RADAR)
+    {
+      float ro = meas_package.raw_measurements_[0];  // The distance from origin to the object
+      float theta = meas_package.raw_measurements_[1]; // angle made by ro with the y axis;
+      x_(0) = ro*cos(theta);
+      x_(1) = ro*sin(theta); 
+    }
+
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER)
+    {
+
+      x_(0) = meas_package.raw_measurements_[0];
+      x_(1) = meas_package.raw_measurements_[1];
+    }
+
+    return;
+  }
+  // Initialization
+  /***************************************************/
+  /***************************************************/
+
+
+
+
+
 }
 
 /**

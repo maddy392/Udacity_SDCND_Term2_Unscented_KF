@@ -24,7 +24,7 @@ UKF::UKF() {
   // Setting it to diagonal matrix with values 1
   P_ = MatrixXd(5, 5);
   P_.fill (0.0);
-  for (int i = 0; i < P_.col().size(); i++)
+  for (int i = 0; i < 5; i++)
   {
     P_(i,i) = 1;
   }
@@ -152,7 +152,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   MatrixXd Xsig = MatrixXd(n_x_, 2 * n_x_ + 1);
 
   ///* Creating Squareroot matrix
-  MatrixXd A = P.llt().matrixL();
+  MatrixXd A = P_.llt().matrixL();
 
   ///* Setting first column to be same as X
   Xsig.col(0) = x_;
@@ -161,8 +161,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   ///* Xk∣k =[xk∣k     xk∣k + sqrt((λ+nx)Pk∣k)  xk∣k - sqrt((λ+nx)Pk∣k​​)]
   for (int i = 1; i < n_x_ ; i++)
   {
-    Xsig.col(i) = x + sqrt(lambda_ + n_x_) * A.col(i - 1);
-    Xsig.col(i + n_x_) = x - sqrt(lambda_ + n_x_) * A.col(i - 1);
+    Xsig.col(i) = x_ + sqrt(lambda_ + n_x_) * A.col(i - 1);
+    Xsig.col(i + n_x_) = x_ - sqrt(lambda_ + n_x_) * A.col(i - 1);
   }
   /***************************************************/
   // Generated Sigma Points
@@ -201,14 +201,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
   for (int i = 1; i< n_aug_; i++)
   {
-    Xsig_aug.col(i)       = x_aug + sqrt(lambda+n_aug_) * L.col(i-1);
-    Xsig_aug.col(i+n_aug_) = x_aug - sqrt(lambda+n_aug_) * L.col(i-1);
+    Xsig_aug.col(i)       = x_aug + sqrt(lambda_+n_aug_) * L.col(i-1);
+    Xsig_aug.col(i+n_aug_) = x_aug - sqrt(lambda_+n_aug_) * L.col(i-1);
   }
   /***************************************************/
   // Generated Sigma Points for the Augmented State in Xsig_aug matrix (includes process noises)
   /***************************************************/
 
-  Prediction(time_us_/1000000.0)
+  Prediction(time_us_/1000000.0);
 
 }
 
@@ -237,7 +237,7 @@ void UKF::Prediction(double delta_t)
   MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   //extract values for better readability
-  for (int i = 0; i< 2*n_aug+1; i++)
+  for (int i = 0; i< 2*n_aug_+1; i++)
   {
     //extract values for better readability
     double p_x = Xsig_aug(0,i);
@@ -275,11 +275,11 @@ void UKF::Prediction(double delta_t)
     yawd_p = yawd_p + nu_yawdd*delta_t;
 
     //write predicted sigma point into right column
-    Xsig_pred(0,i) = px_p;
-    Xsig_pred(1,i) = py_p;
-    Xsig_pred(2,i) = v_p;
-    Xsig_pred(3,i) = yaw_p;
-    Xsig_pred(4,i) = yawd_p;
+    Xsig_pred_(0,i) = px_p;
+    Xsig_pred_(1,i) = py_p;
+    Xsig_pred_(2,i) = v_p;
+    Xsig_pred_(3,i) = yaw_p;
+    Xsig_pred_(4,i) = yawd_p;
   }
   /***************************************************/
   // Predicted Sigma Points through the defined process model
@@ -291,19 +291,18 @@ void UKF::Prediction(double delta_t)
   // Converting sigma points into Predicted Mean and covariance 
   /***************************************************/
 
-  VectorXd weights_ = VectorXd(2 * n_aug_ + 1)
+  VectorXd weights_ = VectorXd(2 * n_aug_ + 1);
 
   ///* Defining weights 
   ///* Weights wi=λ/(λ+na) for i=1 //na = 7
   ///* Weights wi=0.5/(λ+na) for i=2...nσ  //nσ = 15 
-​​
-  double weight_0 = lambda/(lambda+n_aug_);
-  weights(0) = weight_0;  // 1st weight 
+  double weight_0 = lambda_/(lambda_+n_aug_);
+  weights_(0) = weight_0;  // 1st weight 
 
-  for (int i=1; i<2*n_aug+1; i++) // 2nd to 2n+1 weights
+  for (int i=1; i<2*n_aug_+1; i++) // 2nd to 2n+1 weights
   {  
-    double weight = 0.5/(n_aug_+lambda);
-    weights(i) = weight;
+    double weight = 0.5/(n_aug_+lambda_);
+    weights_(i) = weight;
   }
 
   ///* Converting predicted sigma points to predicted state vector and covariance matrix
@@ -314,7 +313,7 @@ void UKF::Prediction(double delta_t)
   x_pred_.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) 
   {  //iterate over sigma points
-    x_pred_ = x_pred_ + weights(i) * Xsig_pred.col(i);
+    x_pred_ = x_pred_ + weights_(i) * Xsig_pred_.col(i);
   }
 
   ///* Predicted Covariance
@@ -325,12 +324,12 @@ void UKF::Prediction(double delta_t)
   {  //iterate over sigma points
 
     // state difference
-    VectorXd x_diff = Xsig_pred.col(i) - x;
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
     //angle normalization
     while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
     while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
 
-    P_pred_ = P_pred_ + weights(i) * x_diff * x_diff.transpose() ;
+    P_pred_ = P_pred_ + weights_(i) * x_diff * x_diff.transpose() ;
   }
   /***************************************************/
   // Converted sigma points into Predicted Mean (x_pred_) and covariance (P_pred_) 
@@ -375,7 +374,6 @@ void UKF::UpdateLidar(VectorXd z)
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_lid, 2 * n_aug + 1); // 1 column for each sigma point 
 
-​​
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 simga points
 
     // extract values for better readibility
@@ -487,9 +485,7 @@ void UKF::UpdateRadar(VectorXd z) {
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_rad, 2 * n_aug + 1); // 1 column for each sigma point 
 
-​​
   for (int i = 0; i < 2 * n_aug + 1; i++) {  //2n+1 simga points
-
     // extract values for better readibility
     double p_x = Xsig_pred(0,i);
     double p_y = Xsig_pred(1,i);

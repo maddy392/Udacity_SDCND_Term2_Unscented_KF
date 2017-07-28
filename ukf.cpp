@@ -88,6 +88,9 @@ UKF::~UKF() {}
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
   /**
   TODO:
 
@@ -156,6 +159,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
   time_us_ = meas_package.timestamp_;
 
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+
 }
 
 /**
@@ -175,6 +181,9 @@ void UKF::Prediction(double delta_t)
   /***************************************************/
   // Generating Sigma Points for the Augmented State (including process noises)
   /***************************************************/
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
   ///* Creating a augmented state vector
   VectorXd x_aug = VectorXd(n_aug_); // 5 state variables and two process noise variables 
 
@@ -210,7 +219,8 @@ void UKF::Prediction(double delta_t)
   // Generated Sigma Points for the Augmented State in Xsig_aug matrix (includes process noises)
   /***************************************************/
 
-
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
 
   /***************************************************/
@@ -272,7 +282,10 @@ void UKF::Prediction(double delta_t)
   // Predicted Sigma Points through the defined process model
   /***************************************************/
 
+  cout << Xsig_pred_ << endl;
 
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
   /***************************************************/
   // Converting sigma points into Predicted Mean and covariance 
@@ -318,6 +331,9 @@ void UKF::Prediction(double delta_t)
 
     P_pred_ = P_pred_ + weights_(i) * x_diff * x_diff.transpose() ;
   }
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
   /***************************************************/
   // Converted sigma points into Predicted Mean (x_pred_) and covariance (P_pred_) 
   /***************************************************/
@@ -346,7 +362,11 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
   ///* we use the same sigma points as predicted before Xsig_pred;transform sigma points into measurement space
   ///* Measurement Model : zk+1∣k = h(xk+1) + wk+1  (h is the conversion matrix and w is the measurement noise)
 
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
+
+  
   int n_lid = 2; // set measurement dimension, lidar can measure px andn py only
 
   //create matrix for sigma points in measurement space
@@ -387,6 +407,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
   //add measurement noise covariance matrix
   MatrixXd R = MatrixXd(n_lid,n_lid);
@@ -433,6 +456,9 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 }
 }
 
@@ -457,28 +483,51 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   ///* we use the same sigma points as predicted before Xsig_pred;transform sigma points into measurement space
   ///* Measurement Model : zk+1∣k = h(xk+1) + wk+1  (h is the conversion matrix and w is the measurement noise)
 
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+
 
   int n_rad = 3; // set measurement dimension, radar can measure r, phi, and r_dot
 
   //create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_rad, 2 * n_aug_ + 1); // 1 column for each sigma point 
 
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+
+
   for (int i = 0; i < 2 * n_aug_ + 1; i++) 
   {  //2n+1 simga points
     // extract values for better readibility
+
+    cout << "Printing Predicted sigma points" << Xsig_pred_ << endl;
+
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
     double p_x = Xsig_pred_(0,i);
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
     double p_y = Xsig_pred_(1,i);
     double v  = Xsig_pred_(2,i);
     double yaw = Xsig_pred_(3,i);
 
     double v1 = cos(yaw)*v;
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
     double v2 = sin(yaw)*v;
 
     // measurement model
-    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
-    Zsig(1,i) = atan2(p_y,p_x);                                 //phi
+    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);  
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);                      //r
+    Zsig(1,i) = atan2(p_y,p_x);  
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);                               //phi
     Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
   }
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
   //mean predicted measurement in measurement space 
   // Predicted Mean : zk+1∣k = ∑i=1 to nσ​  (wi * Zk+1∣k,i)
@@ -486,6 +535,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   z_pred.fill(0.0);
   for (int i=0; i < 2*n_aug_+1; i++) 
   {
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
       z_pred = z_pred + weights_(i) * Zsig.col(i);
   }
 
@@ -496,11 +547,15 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   S.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
     //residual
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
     //angle normalization
     while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
     while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
@@ -510,7 +565,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   R <<    std_radr_*std_radr_, 0, 0,
           0, std_radphi_*std_radphi_, 0,
           0, 0,std_radrd_*std_radrd_;
+          printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
   S = S + R;
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
   /***************************************************/
   // Updating 
@@ -551,6 +611,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
   P_ = P_ - K*S*K.transpose();
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
   }
 }

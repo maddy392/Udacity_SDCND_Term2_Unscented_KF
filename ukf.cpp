@@ -87,7 +87,8 @@ UKF::~UKF() {}
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
-void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+void UKF::ProcessMeasurement(MeasurementPackage meas_package) 
+{
 
   printf ("This is line %d of file %s (function %s)\n",\
                       __LINE__, __FILE__, __func__);
@@ -102,9 +103,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // Initialization of First Measurement 
   /***************************************************/
 
+  cout << is_initialized_ << endl; 
+
 
   if (!is_initialized_)
   {
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
     time_us_ = meas_package.timestamp_;
     is_initialized_ = true;
     x_ << 1,1,1,1,0.5; // Random choice 
@@ -113,6 +118,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     {
       P_(i,i) = 1;
     }
+
+    Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+    Xsig_pred_.fill(0.0);
+
+    weights_ = VectorXd(2 * n_aug_ + 1);
 
 
     if(meas_package.sensor_type_ == MeasurementPackage::RADAR)
@@ -129,9 +139,13 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       x_(0) = meas_package.raw_measurements_[0];
       x_(1) = meas_package.raw_measurements_[1];
     }
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 
     return;
   }
+
+  cout << time_us_<<endl;
   /***************************************************/
   // First Measurement Initializated
   /***************************************************/
@@ -140,28 +154,41 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   /***************************************************/
   // If not the first measurement, we update the timestamp
   /***************************************************/
-  time_us_ = meas_package.timestamp_ - time_us_;
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+  double dt = meas_package.timestamp_ - time_us_;
+  cout << dt << endl;
+  time_us_ = meas_package.timestamp_;
   /***************************************************/
   // Timestamp updated
   /***************************************************/
 
+  //Xsig_pred_.fill(0.0);
 
-  Prediction(time_us_/1000000.0);
-
-  if(meas_package.sensor_type_ == MeasurementPackage::RADAR) 
-  {
-    UpdateRadar(meas_package);
-  }
-  else if (meas_package.sensor_type_ == MeasurementPackage::LASER)
-  {
-    UpdateLidar(meas_package);
-  }
-
-  time_us_ = meas_package.timestamp_;
 
   printf ("This is line %d of file %s (function %s)\n",\
                       __LINE__, __FILE__, __func__);
 
+  Prediction(dt/1000000.0);
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+
+  if(meas_package.sensor_type_ == MeasurementPackage::RADAR) 
+  {
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+    UpdateRadar(meas_package);
+  }
+  else //(meas_package.sensor_type_ == MeasurementPackage::LASER)
+  {
+    printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
+    UpdateLidar(meas_package);
+  }
+
+  printf ("This is line %d of file %s (function %s)\n",\
+                      __LINE__, __FILE__, __func__);
 }
 
 /**
@@ -231,7 +258,7 @@ void UKF::Prediction(double delta_t)
   ///* https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/daf3dee8-7117-48e8-a27a-fc4769d2b954/concepts/63674ce2-43ed-418c-bf8b-d16ae73dffc0
 
   ///* Creating predicted sigma points matrix
-  MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
+  //MatrixXd Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 
   //extract values for better readability
   for (int i = 0; i< 2*n_aug_+1; i++)
@@ -282,7 +309,7 @@ void UKF::Prediction(double delta_t)
   // Predicted Sigma Points through the defined process model
   /***************************************************/
 
-  cout << Xsig_pred_ << endl;
+  // << Xsig_pred_ << endl;
 
   printf ("This is line %d of file %s (function %s)\n",\
                       __LINE__, __FILE__, __func__);
@@ -291,7 +318,7 @@ void UKF::Prediction(double delta_t)
   // Converting sigma points into Predicted Mean and covariance 
   /***************************************************/
 
-  VectorXd weights_ = VectorXd(2 * n_aug_ + 1);
+  //VectorXd weights_ = VectorXd(2 * n_aug_ + 1);
 
   ///* Defining weights 
   ///* Weights wi=λ/(λ+na) for i=1 //na = 7
@@ -442,12 +469,14 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
 
+  }
+
 
     //Kalman gain K;
   MatrixXd K = Tc * S.inverse();
 
   //residual
-  z_diff = meas_package.raw_measurements_ - z_pred;
+  VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
 
   //angle normalization
   while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
@@ -459,7 +488,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package)
 
   printf ("This is line %d of file %s (function %s)\n",\
                       __LINE__, __FILE__, __func__);
-}
 }
 
 
@@ -500,29 +528,19 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   {  //2n+1 simga points
     // extract values for better readibility
 
-    cout << "Printing Predicted sigma points" << Xsig_pred_ << endl;
+    //cout << "Printing Predicted sigma points" << Xsig_pred_ << endl;
 
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
     double p_x = Xsig_pred_(0,i);
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
     double p_y = Xsig_pred_(1,i);
     double v  = Xsig_pred_(2,i);
     double yaw = Xsig_pred_(3,i);
 
     double v1 = cos(yaw)*v;
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
     double v2 = sin(yaw)*v;
 
     // measurement model
-    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);  
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);                      //r
-    Zsig(1,i) = atan2(p_y,p_x);  
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);                               //phi
+    Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                       //r
+    Zsig(1,i) = atan2(p_y,p_x);                            //phi
     Zsig(2,i) = (p_x*v1 + p_y*v2 ) / sqrt(p_x*p_x + p_y*p_y);   //r_dot
   }
 
@@ -535,8 +553,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   z_pred.fill(0.0);
   for (int i=0; i < 2*n_aug_+1; i++) 
   {
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
       z_pred = z_pred + weights_(i) * Zsig.col(i);
   }
 
@@ -547,16 +563,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   S.fill(0.0);
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
     //residual
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
     VectorXd z_diff = Zsig.col(i) - z_pred;
 
     //angle normalization
     while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
     while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
-    printf ("This is line %d of file %s (function %s)\n",\
-                      __LINE__, __FILE__, __func__);
-
+  
     S = S + weights_(i) * z_diff * z_diff.transpose();
   }
 
@@ -597,12 +609,14 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
 
     Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
 
+  }
+
 
     //Kalman gain K;
   MatrixXd K = Tc * S.inverse();
 
   //residual
-  z_diff = meas_package.raw_measurements_ - z_pred;
+  VectorXd z_diff = meas_package.raw_measurements_ - z_pred;
 
   //angle normalization
   while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
@@ -615,5 +629,4 @@ void UKF::UpdateRadar(MeasurementPackage meas_package)
   printf ("This is line %d of file %s (function %s)\n",\
                       __LINE__, __FILE__, __func__);
 
-  }
 }
